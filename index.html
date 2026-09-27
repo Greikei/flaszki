@@ -229,19 +229,27 @@
         }
 
         function nextCard() {
-            currentIndex = (currentIndex + 1) % allCards.length;
-            loadCard(currentIndex);
+            if (currentIndex < cardOrder.length - 1) {
+                currentIndex++;
+                loadCard(cardOrder[currentIndex]);
+            } else {
+                // Po przejściu całej talii ponownie losujemy kolejność
+                shuffleCards();
+            }
         }
 
         function prevCard() {
-            currentIndex = (currentIndex - 1 + allCards.length) % allCards.length;
-            loadCard(currentIndex);
+            currentIndex = (currentIndex - 1 + cardOrder.length) % cardOrder.length;
+            loadCard(cardOrder[currentIndex]);
         }
 
+        // Tworzy nową losową kolejność bez powtarzania,
+        // dopóki nie zostanie przejrzana cała talia.
         function shuffleCards() {
-            shuffleArray(allCards);
+            cardOrder = Array.from({length: allCards.length}, (_, i) => i);
+            shuffleArray(cardOrder);
             currentIndex = 0;
-            loadCard(currentIndex);
+            loadCard(cardOrder[currentIndex]);
         }
 
         // --- LOGIKA TESTU ABCD ---
@@ -356,7 +364,7 @@
 
         // Inicjalizacja przy załadowaniu strony
         window.onload = () => {
-            loadCard(currentIndex);
+            shuffleCards();
             
             // Obsługa strzałek na klawiaturze
             document.addEventListener('keydown', function(event) {
