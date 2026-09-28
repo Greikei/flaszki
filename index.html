@@ -3,387 +3,318 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Egzamin Dyplomowy - Fiszki (Informatyka)</title>
-    <script src="https://cdn.tailwindcss.com"></script>
+    <title>Obrona Informatyka - Fiszki i Test</title>
     <style>
-        body { background-color: #f3f4f6; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
-        .perspective-1000 { perspective: 1000px; }
-        .transform-style-3d { transform-style: preserve-3d; }
-        .backface-hidden { backface-visibility: hidden; }
-        .rotate-y-180 { transform: rotateY(180deg); }
-        .transition-transform { transition: transform 0.6s ease; }
+        :root {
+            --primary: #2563eb;
+            --primary-hover: #1d4ed8;
+            --bg: #f8fafc;
+            --card-bg: #ffffff;
+            --text: #1e293b;
+            --correct: #22c55e;
+            --wrong: #ef4444;
+            --known: #10b981;
+        }
+        body {
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .header { text-align: center; margin-bottom: 15px; }
         
-        /* Custom scrollbar dla długich odpowiedzi */
-        .card-content::-webkit-scrollbar, .test-option::-webkit-scrollbar { width: 6px; }
-        .card-content::-webkit-scrollbar-track, .test-option::-webkit-scrollbar-track { background: transparent; }
-        .card-content::-webkit-scrollbar-thumb, .test-option::-webkit-scrollbar-thumb { background-color: #cbd5e1; border-radius: 10px; }
+        .stats-box {
+            background: white; padding: 15px 25px; border-radius: 12px;
+            box-shadow: 0 2px 4px rgb(0 0 0 / 0.05); margin-bottom: 20px;
+            display: flex; gap: 20px; font-weight: bold; border: 1px solid #e2e8f0;
+        }
+        .stats-box .known { color: var(--known); }
+        .stats-box .unknown { color: var(--wrong); }
+
+        .mode-switch { display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; justify-content: center;}
+        
+        button {
+            padding: 10px 20px; border: none; border-radius: 8px;
+            background: var(--primary); color: white; cursor: pointer;
+            font-size: 15px; font-weight: bold; transition: background 0.2s;
+        }
+        button:hover { background: var(--primary-hover); }
+        .mode-switch button { background: #cbd5e1; color: var(--text); }
+        .mode-switch button.active { background: var(--primary); color: white; }
+        .mode-switch button.filter-btn { background: #fde047; color: #854d0e; }
+        .mode-switch button.filter-btn.active { background: #eab308; color: white; }
+        
+        /* Fiszki */
+        .flashcard-container {
+            perspective: 1000px; width: 100%; max-width: 600px; height: 380px;
+            margin-bottom: 20px;
+        }
+        .flashcard {
+            width: 100%; height: 100%; position: relative;
+            transition: transform 0.6s cubic-bezier(0.4, 0.2, 0.2, 1); transform-style: preserve-3d; cursor: pointer;
+        }
+        .flashcard.is-flipped { transform: rotateY(180deg); }
+        .card-face {
+            position: absolute; width: 100%; height: 100%;
+            -webkit-backface-visibility: hidden; backface-visibility: hidden;
+            background: var(--card-bg); border-radius: 16px;
+            box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1);
+            display: flex; flex-direction: column; justify-content: center;
+            align-items: center; padding: 30px; box-sizing: border-box; text-align: center;
+        }
+        .card-back { transform: rotateY(180deg); text-align: left; align-items: flex-start; overflow-y: auto;}
+        .card-title { font-size: 14px; color: #64748b; margin-bottom: 15px; text-transform: uppercase; font-weight: 600; letter-spacing: 1px;}
+        .card-content { font-size: 20px; font-weight: 500; }
+        .card-back .card-content { font-size: 17px; font-weight: 400; line-height: 1.6;}
+        
+        /* Test ABCD */
+        .test-container {
+            width: 100%; max-width: 600px; display: none;
+            background: var(--card-bg); padding: 30px; border-radius: 16px;
+            box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1); box-sizing: border-box;
+        }
+        .options-grid { display: grid; gap: 10px; margin-top: 20px; }
+        .option-btn {
+            background: #f1f5f9; color: var(--text); text-align: left;
+            padding: 15px; font-size: 15px; font-weight: normal; border-radius: 8px;
+        }
+        .option-btn:hover:not(:disabled) { background: #e2e8f0; }
+        .option-btn.correct { background: var(--correct); color: white; }
+        .option-btn.wrong { background: var(--wrong); color: white; }
+        
+        .controls { display: flex; gap: 15px; flex-wrap: wrap; justify-content: center;}
+        .hidden { display: none !important; }
     </style>
 </head>
-<body class="flex flex-col items-center justify-center min-h-screen p-4 text-slate-800">
+<body>
 
-    <div class="max-w-4xl w-full">
-        <!-- Tryb przełączania -->
-        <div class="flex justify-center mb-8 space-x-4">
-            <button id="btn-mode-fiszki" onclick="switchMode('fiszki')" class="bg-blue-600 text-white px-6 py-2 rounded-lg font-bold shadow transition">Fiszki</button>
-            <button id="btn-mode-test" onclick="switchMode('test')" class="bg-white text-slate-700 px-6 py-2 rounded-lg font-bold shadow transition border border-slate-200">Test ABCD</button>
-        </div>
+    <div class="header">
+        <h1>Obrona - Informatyka</h1>
+    </div>
 
-        <!-- Sekcja Fiszek -->
-        <div id="flashcards-section" class="max-w-2xl mx-auto w-full">
-            <!-- Header -->
-            <div class="text-center mb-6">
-                <h1 class="text-3xl font-bold text-blue-600 mb-2">Egzamin Dyplomowy - Informatyka</h1>
-            </div>
-        </div>
+    <div class="stats-box">
+        <div class="known">✔ Umiesz: 27</div>
+        <div class="unknown">📝 Do nauki: 40</div>
+    </div>
 
-        <!-- Flashcard -->
-        <div class="relative w-full h-96 perspective-1000 cursor-pointer group" onclick="flipCard()">
-            <div id="flashcard-inner" class="w-full h-full relative transform-style-3d transition-transform duration-500 shadow-xl rounded-2xl">
-                
-                <!-- Front (Question) -->
-                <div class="absolute w-full h-full backface-hidden bg-white rounded-2xl flex flex-col items-center justify-center p-8 border-2 border-blue-100">
-                    <div class="text-xs font-bold text-blue-400 uppercase tracking-wider mb-4">Pytanie</div>
-                    <h2 id="question-text" class="text-2xl md:text-3xl font-semibold text-center text-slate-800 leading-tight">Ladowanie pytań...</h2>
-                    <div class="absolute bottom-6 text-sm text-gray-400 font-medium">Kliknij, aby odwrócić</div>
+    <div class="mode-switch">
+        <button id="btn-filter" class="filter-btn active" onclick="toggleFilter()">Tylko to, czego nie umiem</button>
+        <button id="btn-mode-flashcards" class="active" onclick="switchMode('flashcards')">Fiszki</button>
+        <button id="btn-mode-test" onclick="switchMode('test')">Test ABCD</button>
+    </div>
+
+    <!-- Sekcja Fiszek -->
+    <div id="flashcards-section">
+        <div class="flashcard-container" onclick="flipCard()">
+            <div class="flashcard" id="flashcard">
+                <div class="card-face card-front">
+                    <div class="card-title" id="fc-title">Pytanie 1</div>
+                    <div class="card-content" id="fc-question">Ładowanie...</div>
                 </div>
-
-                <!-- Back (Answer) -->
-                <div class="absolute w-full h-full backface-hidden bg-blue-600 rounded-2xl rotate-y-180 flex flex-col p-6 shadow-lg text-white">
-                    <div class="text-xs font-bold text-blue-200 uppercase tracking-wider mb-2 text-center">Odpowiedź</div>
-                    <div id="answer-text" class="card-content flex-grow overflow-y-auto text-lg md:text-xl font-medium flex flex-col justify-center leading-relaxed">
-                        Ladowanie odpowiedzi...
-                    </div>
+                <div class="card-face card-back">
+                    <div class="card-title">Odpowiedź (Kliknij, aby odwrócić)</div>
+                    <div class="card-content" id="fc-answer">Ładowanie...</div>
                 </div>
             </div>
         </div>
-
-        <!-- Controls -->
-        <div class="flex justify-between mt-8">
-            <button onclick="prevCard()" class="bg-white border-2 border-slate-200 text-slate-700 px-6 py-3 rounded-xl hover:bg-slate-50 hover:border-slate-300 transition font-bold shadow-sm">
-                &larr; Poprzednie
-            </button>
-            <button onclick="nextCard()" class="bg-blue-600 text-white px-8 py-3 rounded-xl hover:bg-blue-700 transition font-bold shadow-md">
-                Następne &rarr;
-            </button>
+        <div class="controls">
+            <button onclick="prevQuestion()">&larr; Poprzednie</button>
+            <button onclick="shuffleQuestions()">🔀 Losuj z puli</button>
+            <button onclick="nextQuestion()">Następne &rarr;</button>
         </div>
-        </div>
+        <p style="text-align:center; color:#64748b; font-size:12px; margin-top:15px;">Klawiatura: strzałki &larr; &rarr; oraz Spacja/Enter</p>
+    </div>
 
-        <!-- Sekcja Testu ABCD -->
-        <div id="test-section" class="w-full hidden">
-            <div class="text-center mb-4">
-                <h2 class="text-2xl font-bold text-blue-600 mb-2">Test Wiedzy ABCD</h2>
-                <div class="flex justify-between items-center bg-white p-3 rounded-lg shadow-sm mb-6 mx-auto">
-                    <span id="test-counter" class="font-semibold text-lg text-slate-700">Pytanie 1 / 67 | Wynik: 0</span>
-                    <button onclick="initTest()" class="text-sm text-gray-500 hover:text-gray-700 underline font-medium">Zacznij od nowa</button>
-                </div>
-            </div>
-            
-            <div id="test-active-view">
-                <div class="bg-white p-6 md:p-8 rounded-2xl shadow-xl border-2 border-blue-100 mb-6">
-                    <h3 id="test-question-text" class="text-xl md:text-2xl font-semibold text-slate-800 text-center mb-8">Ładowanie pytania...</h3>
-                    <div id="test-options" class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <!-- Opcje generowane dynamicznie -->
-                    </div>
-                </div>
-
-                <div class="flex justify-center mt-6 h-12">
-                    <button id="test-next-btn" onclick="nextTestQuestion()" class="hidden bg-blue-600 text-white px-8 py-3 rounded-xl hover:bg-blue-700 transition font-bold shadow-md">
-                        Następne pytanie &rarr;
-                    </button>
-                </div>
-            </div>
-
-            <!-- Ekran końcowy testu -->
-            <div id="test-result-view" class="hidden bg-white p-10 rounded-2xl shadow-xl border-2 border-green-100 text-center mt-4">
-                <h3 class="text-3xl font-bold text-slate-800 mb-4">Test Zakończony! 🎉</h3>
-                <p class="text-xl text-slate-600 mb-8">Twój ostateczny wynik to: <br><span id="test-final-score" class="font-bold text-blue-600 text-4xl mt-2 block"></span></p>
-                <button onclick="initTest()" class="bg-green-500 text-white px-8 py-4 rounded-xl hover:bg-green-600 transition font-bold shadow-md text-lg">
-                    Rozwiąż test ponownie
-                </button>
-            </div>
+    <!-- Sekcja Testu -->
+    <div id="test-section" class="test-container hidden">
+        <div class="card-title" id="test-title">Pytanie 1</div>
+        <div class="card-content" id="test-question" style="font-weight:600; margin-bottom: 20px;">Ładowanie...</div>
+        <div class="options-grid" id="test-options"></div>
+        <div class="controls" style="margin-top: 20px;">
+            <button id="test-next-btn" onclick="nextTestQuestion()" class="hidden">Następne pytanie &rarr;</button>
         </div>
     </div>
 
-    <script>
-        const allCards = [
-            {q: "1. Systemy liczbowe (liczenia), przykłady zapisu liczby w każdym z nich.", a: "<ul><li><b>Dziesiętny:</b> (cyfry 0-9) np. 25</li><li><b>Dwójkowy (Binarny):</b> (0, 1) np. 11001_2</li><li><b>Ósemkowy:</b> (0-7) np. 31_8</li><li><b>Szesnastkowy:</b> (0-9, A-F) np. 19_16</li></ul>"},
-            {q: "2. Programowanie strukturalne i niestrukturalne.", a: "<b>Niestrukturalne:</b> Używa instrukcji skoku (GOTO), tworzy tzw. kod spaghetti (trudny do czytania).<br><br><b>Strukturalne:</b> Kod dzieli się na czytelne bloki, pętle (for, while) i instrukcje warunkowe (if). Jest przejrzysty i łatwy w modyfikacji."},
-            {q: "3. Rola wskaźników w programowaniu.", a: "Wskaźnik to zmienna przechowująca <b>adres w pamięci</b> innej zmiennej. <br><br>Role: dynamiczna alokacja pamięci, tworzenie dynamicznych struktur danych (listy, drzewa), przekazywanie parametrów przez referencję."},
-            {q: "4. Rola w programowaniu instrukcji pętli, rodzaje instrukcji pętli.", a: "Służą do <b>wielokrotnego wykonywania</b> bloku kodu.<br>Rodzaje:<br>1. <b>FOR:</b> gdy znamy z góry liczbę powtórzeń.<br>2. <b>WHILE:</b> wykonuj dopóki warunek jest prawdziwy (sprawdza na początku).<br>3. <b>DO-WHILE:</b> wykonuje się minimum 1 raz (sprawdza warunek na końcu)."},
-        { id: 48, q: "Omów diagramy przypadków użycia z języka UML.", a: "Diagramy behawioralne pokazujące CO robi system z perspektywy użytkownika. Elementy: Aktor, Przypadek użycia (owal), Granica systemu. Relacje: <<include>> (obowiązkowe zawarcie akcji), <<extend>> (opcjonalne rozszerzenie)." },
-        { id: 2, q: "Programowanie strukturalne i niestrukturalne.", a: "Niestrukturalne: Używa instrukcji skoku (GOTO), trudny do analizy i śledzenia kod.\nStrukturalne: Kod dzieli się na czytelne bloki, pętle (for, while) i instrukcje warunkowe (if). Jest przejrzysty i łatwy w modyfikacji." },
-        { id: 3, q: "Rola wskaźników w programowaniu.", a: "Wskaźnik przechowuje fizyczny adres w pamięci innej zmiennej.\nRole:\n- dynamiczna alokacja pamięci\n- przekazywanie zmiennych do funkcji przez referencję\n- budowa dynamicznych struktur danych (np. list, drzew)." },
-        { id: 4, q: "Rola w programowaniu instrukcji pętli, rodzaje instrukcji pętli.", a: "Służą do wielokrotnego wykonywania tego samego fragmentu kodu.\nRodzaje:\n- for: wykonuje się ustaloną liczbę razy.\n- while: wykonuje się, dopóki warunek (sprawdzany na początku) jest prawdziwy.\n- do-while: wykonuje się co najmniej raz (warunek sprawdzany na końcu)." },
-        { id: 5, q: "Jakie jest znaczenie asercji początkowej i końcowej algorytmu?", a: "Asercja początkowa: Warunki i stan, które muszą spełniać dane wejściowe przed startem algorytmu.\nAsercja końcowa: Warunki (wynik), które algorytm gwarantuje po swoim poprawnym zakończeniu." },
-        { id: 6, q: "Czym różni się rekurencja ogonowa od bezogonowej?", a: "Ogonowa: Wywołanie samej siebie jest ostatnią operacją w funkcji (kompilator optymalizuje to do pętli).\nBezogonowa: Po powrocie z wywołania rekurencyjnego, algorytm musi wykonać jeszcze dodatkowe operacje." },
-        { id: 8, q: "Jakie znasz algorytmy przeszukiwania drzew binarnych?", a: "1. W głąb DFS:\n- Pre-order (węzeł, lewe, prawe)\n- In-order (lewe, węzeł, prawe - posortowane!)\n- Post-order (lewe, prawe, węzeł)\n2. Wszerz BFS: Odwiedzanie węzłów poziom po poziomie." },
-        { id: 9, q: "Jakie są własności dynamicznego LIFO-stosu i FIFO-kolejki?", a: "Stos (LIFO): Ostatni element dodany jest usuwany jako pierwszy.\nKolejka (FIFO): Pierwszy element dodany jest usuwany jako pierwszy." },
-        { id: 10, q: "Czym jest złożoność obliczeniowa algorytmów i od czego ona zależy?", a: "To miara wydajności algorytmu. Zależy od wielkości danych wejściowych (n).\nDzieli się na:\n- czasową (liczba operacji podstawowych)\n- pamięciową (zapotrzebowanie na pamięć)." },
-        { id: 11, q: "Rodzaje, charakterystyka i przeznaczenie rejestrów procesora.", a: "Najszybsza pamięć w procesorze. Przykłady:\n- Licznik rozkazów (PC): adres następnego rozkazu.\n- Rejestr instrukcji (IR): aktualnie wykonywany rozkaz.\n- Rejestry ogólnego przeznaczenia: do obliczeń arytmetycznych i logicznych." },
-        { id: 12, q: "Istota pamięci wirtualnej, mechanizm tłumaczenia adresu wirtualnego na rzeczywisty.", a: "Pamięć wirtualna to mechanizm dający procesom złudzenie posiadania dużej, ciągłej pamięci (często z użyciem dysku).\nMechanizm: Adres wirtualny (strona + offset) jest tłumaczony na adres fizyczny przez jednostkę MMU przy użyciu tablicy stron." },
-        { id: 13, q: "Charakterystyka czynników wpływających na szybkość wykonywania rozkazów przez procesor.", a: "- Częstotliwość taktowania (GHz)\n- Architektura (np. potokowanie, wielordzeniowość)\n- Pamięć podręczna (Cache L1/L2/L3)\n- Szerokość szyny danych/adresowej." },
-        { id: 14, q: "Szeregowanie procesów, jakie algorytmy są stosowane w szeregowaniu procesów w systemach operacyjnych.", a: "Szeregowanie decyduje, który proces dostanie procesor.\nAlgorytmy:\n- FCFS (First Come First Served)\n- SJF (Shortest Job First)\n- Round Robin (każdy proces dostaje mały kwant czasu w pętli)\n- Priorytetowe." },
-        { id: 15, q: "Synchronizacja procesów, jakie metody synchronizacji procesów można wykorzystać w programach komputerowych.", a: "Metody zapobiegające konfliktom przy współdzieleniu zasobów:\n- Semafory (zmienne liczbowe blokujące dostęp)\n- Muteksy (zamki wykluczania wzajemnego)\n- Monitory (wyższego poziomu, ukrywają szczegóły implementacji)." },
-        { id: 16, q: "Zakleszczenie procesów, jakie metody postępowania z zakleszczeniami są stosowane we współczesnych systemach operacyjnych.", a: "Zakleszczenie (Deadlock): Procesy blokują się nawzajem, czekając na zasoby.\nMetody:\n- Zapobieganie (usuwanie warunków zakleszczenia)\n- Unikanie (np. algorytm bankiera)\n- Wykrywanie i usuwanie (przerywanie procesów)." },
-        { id: 17, q: "Strategie przydziału segmentów pamięci stosowane w systemach operacyjnych.", a: "- First-Fit: Pierwszy wystarczająco duży wolny fragment.\n- Best-Fit: Najmniejszy wystarczający fragment (minimalizuje straty dla dużych bloków, ale tworzy małe dziury).\n- Worst-Fit: Największy wolny fragment (unika małych dziur)." },
-        { id: 18, q: "System plików i jego realizacja w systemie komputerowym.", a: "Abstrakcja systemu operacyjnego ułatwiająca zarządzanie danymi na dysku (np. FAT, NTFS, ext4).\nRealizacja: System operacyjny mapuje logiczną strukturę (katalogi, pliki) na fizyczne bloki na nośniku, przechowując metadane (np. w MFT lub i-węzłach)." },
-        { id: 19, q: "Sposób wyznaczania trasy dla przesłania pakietu przy wykorzystaniu protokołów routingu dynamicznego.", a: "Routery wymieniają się informacjami o topologii sieci.\nAlgorytmy (np. Dijsktry, Bellmana-Forda) obliczają najkrótszą ścieżkę na podstawie metryki (np. liczba skoków, przepustowość, opóźnienie) i zapisują ją w tablicy routingu." },
-        { id: 20, q: "Porównanie protokołów routingu dynamicznego: RIP oraz OSPF.", a: "RIP: Protokół wektora odległości. Metryka to liczba skoków (max 15). Powolna konwergencja. Dla małych sieci.\nOSPF: Protokół stanu łącza. Metryka zależy np. od przepustowości. Szybka konwergencja, duża skalowalność. Dla dużych sieci korporacyjnych." },
-        { id: 21, q: "Rodzaje i charakterystyka metod unikania kolizji stosowane w sieciach przewodowych oraz bezprzewodowych.", a: "Przewodowe (CSMA/CD): Stacje wykrywają kolizję, przerywają nadawanie i czekają losowy czas.\nBezprzewodowe (CSMA/CA): Stacje nasłuchują przed nadaniem i używają mechanizmów rezerwacji (RTS/CTS), by uniknąć ukrytego nadajnika." },
-        { id: 22, q: "Rodzaje i charakterystyka technologii stosowanych w sieciach rozległych.", a: "Sieci WAN łączą sieci LAN na dużych dystansach.\nTechnologie: Linie dzierżawione (np. światłowody), MPLS (szybkie kierowanie ruchem za pomocą etykiet), sieci komórkowe (LTE/5G), sieci satelitarne." },
-        { id: 23, q: "Charakterystyka stosu protokołów TCP/IP", a: "Czterowarstwowy model:\n1. Aplikacji (HTTP, FTP) - obsługa danych z/do programów.\n2. Transportowa (TCP, UDP) - komunikacja między procesami.\n3. Internetowa (IP) - adresowanie i routing pakietów.\n4. Dostępu do sieci - fizyczna transmisja (np. Ethernet)." },
-        { id: 24, q: "Istota działania zdalnego wywoływania procedur (RPC) - na wybranym przykładzie.", a: "Pozwala na wywoływanie funkcji w programie znajdującym się na innym komputerze w sieci tak, jakby funkcja była lokalna.\nPrzykład: gRPC - wywołanie metody pobierającej dane z mikroserwisu. Złożoność sieciowa jest ukryta przez framework." },
-        { id: 25, q: "Czym jest paradygmat programowania? Wymień kilka paradygmatów programowania.", a: "To fundamentalny styl budowania struktury i elementów programu komputerowego.\nPrzykłady: strukturalny, obiektowy, funkcyjny, logiczny, zdarzeniowy." },
-        { id: 26, q: "Zdefiniuj pojęcie klasy w programowaniu obiektowym i omów jej składowe.", a: "Klasa to szablon do tworzenia obiektów.\nSkładowe:\n- Pola (atrybuty): opisują stan obiektu.\n- Metody: definiują zachowanie (funkcjonalność).\n- Konstruktor: specjalna metoda używana do inicjalizacji nowego obiektu." },
-        { id: 27, q: "Na czym polega zjawisko polimorfizmu w programowaniu obiektowym?", a: "Wielopostaciowość. Pozwala na używanie obiektów różnych typów (klas) dziedziczących po wspólnej klasie bazowej w ten sam sposób.\nPrzejawia się w tym, że wywołanie tej samej metody może mieć różny efekt w zależności od faktycznego typu obiektu." },
-        { id: 28, q: "Co to są metody anonimowe i wyrażenia strzałkowe (lambda) w programowaniu dynamicznym?", a: "To funkcje definiowane bez nazwy. Często używane jako argumenty dla innych funkcji (np. callbacki) lub w wyrażeniach LINQ/strumieniach. Lambda to skrócona składnia zapisu metody anonimowej (np. w C#: x => x * x)." },
-        { id: 30, q: "Różnice pomiędzy grafiką rastrową i wektorową oraz ich zastosowania.", a: "Rastrowa: obraz opisany siatką pikseli. Traci jakość przy powiększaniu. Duży rozmiar. Zastosowanie: zdjęcia (JPG, PNG).\nWektorowa: obraz opisany krzywymi i wzorami matematycznymi. Skalowalna bez utraty jakości. Zastosowanie: logotypy, schematy (SVG)." },
-        { id: 31, q: "Omów podstawowe pojęcia typografii.", a: "- Krój pisma (Typeface): ogólny styl (np. Arial).\n- Font: plik z krojem pisma.\n- Szeryfy: ozdobniki na końcach liter (np. Times New Roman).\n- Kerning: odległość między poszczególnymi literami.\n- Interlinia: odległość między wierszami tekstu." },
-        { id: 33, q: "Omów podstawowe etapy tworzenia animacji komputerowej.", a: "1. Pre-produkcja: scenariusz, storyboardy.\n2. Modelowanie: tworzenie obiektów 3D/2D.\n3. Rigging: nakładanie 'szkieletu' (kości) do postaci.\n4. Animacja: definiowanie ruchu w czasie (klatki kluczowe).\n5. Rendering: proces generowania gotowych obrazów przez komputer." },
-        { id: 34, q: "Omów technologie prezentacji scen 3D na stronach interentowych.", a: "- WebGL: niskopoziomowe API oparte na OpenGL ES, działające bez wtyczek w przeglądarce.\n- Three.js / Babylon.js: wysokopoziomowe biblioteki JavaScript, które ukrywają złożoność WebGL, ułatwiając tworzenie i manipulację scenami 3D." },
-        { id: 35, q: "Na czym polega uczenie, bądź samoistne uczenie się, sieci neuronowych?", a: "To proces dostosowywania wag w sieci na podstawie wprowadzanych danych treningowych. Sieć porównuje swój wynik z oczekiwanym wynikiem i wykorzystuje algorytmy (np. propagację wsteczną), aby zminimalizować błąd i lepiej przewidywać w przyszłości." },
-        { id: 36, q: "Jak sądzisz - w jakim celu buduje się systemy sztucznego życia?", a: "- Modelowanie systemów biologicznych w celu lepszego zrozumienia ewolucji i zachowań organizmów.\n- Optymalizacja algorytmów (np. algorytmy genetyczne) rozwiązujących skomplikowane problemy matematyczne.\n- Grafika komputerowa (symulacja rojów, tłumów)." },
-        { id: 37, q: "Co możesz powiedzieć o własnościach i zastosowaniach sterowania rozmytego?", a: "Własności: Zamiast stanów 0/1 (prawda/fałsz), operuje na wartościach ciągłych (stopniach przynależności - np. 'ciepło', 'bardzo zimno').\nZastosowania: Systemy kontroli w pralkach automatycznych, systemy ABS, klimatyzacja (urządzenia radzące sobie z nieprecyzyjnymi danymi)." },
-        { id: 38, q: "Czy drzewo decyzyjne jest metodą reprezentacji wiedzy i dlaczego?", a: "Tak. Pozwala modelować proces decyzyjny w postaci struktury drzewiastej. Węzły wewnętrzne reprezentują pytania (testy na atrybutach), gałęzie to możliwe odpowiedzi, a liście to ostateczne decyzje (kategorie/wnioski). To czytelna dla człowieka i maszyny regułowa struktura 'jeśli - to'." },
-        { id: 39, q: "Jakie widzisz współczesne zastosowania algorytmów mrówkowych?", a: "Zastosowania optymalizacyjne w: problemie komiwojażera (najkrótsza trasa), logistyce i transporcie, routingu pakietów w sieciach telekomunikacyjnych, w rozproszonych systemach szukających ścieżki w dynamicznie zmieniających się warunkach." },
-        { id: 40, q: "Zasady definiujące model danych rozumiany jako architektura BD.", a: "Model określa:\n1. Część strukturalną: jak dane są organizowane (np. obiekty, tabele).\n2. Część operacyjną: w jaki sposób modyfikować/odpytywać dane (język zapytań).\n3. Zasady integralności: reguły zapewniające spójność i poprawność przechowywanych danych." },
-        { id: 41, q: "Typy architektonicznych modeli danych.", a: "- Model relacyjny (tabele połączone relacjami).\n- Model obiektowy (dane to obiekty, hermetyzacja).\n- Model obiektowo-relacyjny (hybryda).\n- Modele nierelacyjne (NoSQL): dokumentowe (MongoDB), klucz-wartość (Redis), grafowe (Neo4j)." },
-        { id: 42, q: "Trójpoziomowa architektura SBD.", a: "1. Poziom wewnętrzny (fizyczny): Jak dane i struktury są zapisane na dysku.\n2. Poziom konceptualny (logiczny): Schemat bazy, relacje i ograniczenia - logika danych dla administratora.\n3. Poziom zewnętrzny: Widoki dla poszczególnych aplikacji/użytkowników - to, co użytkownik ma widzieć." },
-        { id: 43, q: "Istota relacyjnego modelu danych.", a: "Dane reprezentowane są w formie zbiorów relacji, czyli dwuwymiarowych tabel. Wiersze to rekordy (krotki), kolumny to atrybuty. Powiązania między tabelami realizuje się przez klucze główne i obce. Opiera się na solidnych podstawach matematycznych (teorii mnogości i relacji)." },
-        { id: 44, q: "Elementy i funkcje jądra systemu zarządzania BD.", a: "Jądro zarządza dostępem i organizacją danych.\nFunkcje:\n- Komunikacja z OS i dyskami (zarządzanie zasobami).\n- Optymalizator zapytań i obsługa metadanych.\n- Zarządzanie transakcjami (odzyskiwanie po awarii).\n- Mechanizmy bezpieczeństwa i autoryzacji (Zarządzanie bezpieczeństwem)." },
-        { id: 45, q: "Charakterystyka tzw. metody blokowania, zapewniającej współbieżne wykonywanie transakcji w BD.", a: "Polega na kontrolowaniu, kto może czytać lub modyfikować konkretne zasoby w jednym momencie, przez nadawanie blokad na wiersze lub tabele.\nDzięki temu unika się problemów nadpisania danych czy 'brudnych odczytów', zapewniając własność ACID transakcji." },
-        { id: 46, q: "Wymień i scharakteryzuj diagramy UML opisujące strukturę systemu informatycznego.", a: "Diagramy strukturalne modelują statyczną budowę.\n- Diagram Klas: Pokazuje klasy, ich pola, metody i powiązania (główny przy projektowaniu kodu).\n- Diagram Komponentów: Organizacja i zależności miedzy fizycznymi modułami softu.\n- Diagram Wdrożenia: ODWZOROWANIE architektury fizycznej sprzętu na oprogramowanie (np. serwery na bazy danych i API)." },
-        { id: 47, q: "Wymień i scharakteryzuj diagramy UML opisujące zachowanie systemu informatycznego.", a: "Diagramy behawioralne modelują dynamikę.\n- Diagram Przypadków Użycia: Jakie są akcje z perspektywy aktorów.\n- Diagram Sekwencji: Chronologiczna wymiana komunikatów między obiektami.\n- Diagram Aktywności: Przepływ czynności w ramach określonego procesu (podobny do schematu blokowego)." },
-        { id: 49, q: "Omów rodzaje testów w procesie wytwórczym systemu informatycznego.", a: "- Jednostkowe: Testowanie wyizolowanych metod (np. z wykorzystaniem mocków).\n- Integracyjne: Testowanie współpracy różnych modułów połączonych w grupę.\n- Systemowe: Testowanie całego, zintegrowanego systemu wg wymagań.\n- Akceptacyjne (UAT): Przeprowadzane przez końcowego użytkownika (odbiorcę)." },
-        { id: 50, q: "Omów trzy różne modele cyklu życia systemu informatycznego.", a: "- Wodospadowy (Waterfall): Sekwencyjne fazy, po każdej z nich zamyka się etap; sztywne przejście do kolejnych etapów.\n- Spiralny (Spiral Model): Cykliczny model z analizą ryzyka; tworzenie kolejnych wersji (prototypów) podczas przebiegów pętli spiralnej.\n- Agile (Zwinne programowanie): Iteracyjne, krótkie cykle (Sprinty). Silny nacisk na współpracę z klientem, pozwala na szybkie adaptacje." },
-        { id: 51, q: "Charakterystyka co najmniej trzech elementów niezbędnych do budowy systemu wbudowanego.", a: "1. Mikroprocesor/Mikrokontroler: Jednostka wykonująca instrukcje z oprogramowania i koordynująca peryferia.\n2. Pamięć operacyjna i ROM/Flash: na przechowywanie kodu programu oraz na potrzeby bieżących obliczeń.\n3. Interfejsy we/wy (I/O) lub czujniki, przez które urządzenie wchodzi w interakcje z otoczeniem." },
-        { id: 52, q: "Charakterystyka trzech elementów mikrokontrolera.", a: "1. Rdzeń (CPU): jednostka wykonująca obliczenia.\n2. Timery/Licznik: służące do zarządzania czasem (np. do opóźnień) i tworzenia sygnału PWM.\n3. Przetwornik ADC/DAC: np. przetwornik z sygnału analogowego w cyfrowy do analizy pomiarów z czujnika, czy w drugą ze strony DAC np. by sterować głośnikiem z wartości cyfrowych." },
-        { id: 53, q: "Zasadnicze różnice i podobieństwa występujące między mikroprocesorem, a mikrokontrolerem.", a: "Podobieństwa: Obydwa mają procesor, potrafią obliczać instrukcje i pełnić rolę nadrzędną.\nRóżnice: Mikrokontroler to 'komputer w pigułce' zintegrowany w 1 kości m.in. pamięci i niezbędne interfejsy I/O. Mikroprocesor zazwyczaj zawiera tylko obwody sterowania układami obliczeniowymi, wymaga dedykowanych kości pamięci." },
-        { id: 54, q: "Konsekwencje stosowania systemów operacyjnych w systemach wbudowanych.", a: "Zalety: Ułatwienie programowania zaawansowanych funkcji z użyciem m.in. gotowych modułów do zadań wielowątkowych.\nWady: Trudność zagwarantowania 'real-time' dla krytycznych systemów (np. lotniczych), zwiększenie obciążenia pamięciowego na poczet OS." },
-        { id: 55, q: "Znaczenie terminów: OTP, programowanie w systemie, bootloader.", a: "OTP (One-Time Programmable): pamięć jednokrotnego zapisu.\nISP (In-System Programming): programowanie pamięci mikrokontrolera zamontowanego na dedykowanej jemu płytce bez jej wyjmowania na stanowisko do wgrania wsadu (programatora).\nBootloader: prosty podprogram umieszczony na układzie ułatwiający ładowanie i testowanie." },
-        { id: 56, q: "Społeczeństwo informacyjne.", a: "Społeczeństwo dla którego podstawą funkcjonowania ekonomicznego (gospodarka) stał się sposób zarządzania posiadaną informacją. Technologia IT/ICT napędza tam rozwój zamiast przemysłu produkcyjnego." },
-        { id: 57, q: "Etyka w informatyce.", a: "Zbiór norm postępowania przy wytwarzaniu oprogramowania. Chodzi o uniknięcie celowego projektowania kodów, które łamały by zasady (np. szpiegowanie poprzez aplikacje), czy powstrzymaniu przed tworzeniem wirusów lub niszczenia pracy złośliwym skryptem." },
-        { id: 58, q: "Odpowiedzialność zawodowa informatyków.", a: "Przejęcie pełnej odpowiedzialności na poczet np. powierzonego wrażliwego pakietu z danymi firmy lub klienta, oraz np. za rzetelną realizację kontraktu na stabilny kod." },
-        { id: 59, q: "Ochrona własności intelektualnej w informatyce.", a: "Chroniona jest z poziomu ustawy o prawach autorskich lub z rejestracji odpowiednich zastrzeżeń. Obejmuje m.in prawo np. do bazodanowych zestawień a także np. udostępnionego, napisanego za darmo na forum pomysłu, oraz objęcie ochroną w postaci zmuszenia firm przez rządy do płacenia autorom programów stosownych tantiemów w obrębie umów patentowych (licencje)." },
-        { id: 60, q: "Ochrona prywatności użytkowników technologii informacyjnych.", a: "Obejmuje zabezpieczanie systemów i infrastruktury przesyłowych na rzecz szyfrowania w celu wykluczenia kradzieży haseł logowania klienta i niepozwalające np. wykorzystać informacji m.in do niechcianych reklam." },
-        { id: 61, q: "Ryzyko związane z projektami informatycznymi.", a: "Większe obciążenia przy złym wyliczeniu wymagań sprzętowych oraz braku spójności oprogramowania przez złe dobranie stacku technologicznego, doprowadzenie przez np. zmianę założeń na horyzoncie działania do opóźnień (np. z nieplanowanej braku stabilności bazy kodu) czy wyzerowania w całości kapitału projektowego przez porażkę pomysłu rynkowego." },
-        { id: 62, q: "Szkoła w dobie nowoczesnych technologii informacyjnych.", a: "Konieczność edukowania by przygotować nowych uczniów w nowym trybie 'technologicznego umysłu' poprzez zaprezentowanie m.in interaktywnych urządzeń jako wsparcie narzędziowe. Kluczem nie jest samo włączanie i użycie nowinek a pokazywanie sposobu odpowiednio dobieranego zastosowania narzędzi." },
-        { id: 63, q: "Komputery kwantowe - przyszłość informatyki.", a: "Działają szybciej od urządzeń standardowych bo nie opierają swojej architektury na systemie 1 czy 0, a kwantowy 'kubit' dopuszcza w algorytmach istnienie np stanu mieszanego/jednoczesnego. Potężne do np. szybkiej deszyfryzacji na dużą skale." },
-        { id: 64, q: "Autonomiczne systemy w środowisku społecznym.", a: "Ułatwiają wsparcie od np dronów asystujących po pełną obsługę komunikacyjną jak i samodzielnych lekarzy. Stanowią duże korzyści ale wiążą ze sporym kłopotem - przypisania do maszyn odpowiedzialności np po zaistniałym z nimi, niezależnym od uszkodzenia z człowieka strony - wypadku na drodze." },
-        { id: 65, q: "Internet rzeczy - zagrożenia i szanse.", a: "Zalety to kontrola zdalnie wszystkiego pod spodem m.in gniazdek domowych z dowolnej aplikacji internetowej i pomiary ułatwiające zapotrzebowanie. Wadami przy złym zaprojektowaniu jest to punkt darmowej sieci przez słaby kod lub niewymagający sprzęt włamów co poskutkować np mogłoby stworzeniem masowej liczby spambotów psującym łącza lub obniżającym stan energetyczny infrastruktury miejskiej." },
-        { id: 66, q: "Jak zachować w sieci swoją autonomię.", a: "Odizolować i usunąć ze swojego dostępu na stronach nieistotne systemy logujące (np. analityka cookies stron domyślnie ustawiona) i np zablokować śledzące nas mechanizmy reklam na zewnątrz." },
-        { id: 67, q: "Licencje oprogramowania w aspekcie nowoczesnych architektur aplikacji.", a: "Z racji rozproszonego udostępniania i mniejszej rygorystycznej polityki (brak konieczności zakupu oprogramowania) dominuje np. Open Source który do otwartego podziału pozwala na zaawansowany proces wykorzystywania w zamian za współuczestnictwo np firm w procesach zmian kodu bazowego albo np do chmurowego SaaS w abonamencie do którego np. serwera dostawca licencji gwarantuje ciągły i bieżący stan kodu usługi." }
-        // Dodaj pozostałe pytania według tego schematu
+<script>
+    // Twoja baza danych - 40 nieskreślonych pytań (isKnown: false) + kilka skreślonych jako przykłady
+    const db = [
+        // SKREŚLONE (dla spójności)
+        { id: 1, isKnown: true, q: "Systemy liczbowe (liczenia), przykłady zapisu liczby w każdym z nich.", a: "Dziesiętny (0-9), Binarny (0-1), Ósemkowy (0-7), Szesnastkowy (0-9, A-F)." },
+        { id: 2, isKnown: true, q: "Programowanie strukturalne i niestrukturalne.", a: "Niestrukturalne używa np. GOTO (skoki, spaghetti code). Strukturalne używa bloków, pętli (for, while) i warunków (if), kod jest czytelny." },
+        
+        // NIESKREŚLONE (Twoje do nauki)
+        { id: 3, isKnown: false, q: "Rola wskaźników w programowaniu.", a: "Przechowują adresy fizyczne w pamięci operacyjnej. Umożliwiają m.in. dynamiczną alokację pamięci i przekazywanie zmiennych do funkcji przez referencję." },
+        { id: 5, isKnown: false, q: "Jakie jest znaczenie asercji początkowej i końcowej algorytmu?", a: "Początkowa: warunki wejściowe (np. x musi być > 0), jakie muszą być spełnione przed startem. Końcowa: gwarantowany stan wyjściowy/wynik po poprawnym zakończeniu algorytmu." },
+        { id: 7, isKnown: false, q: "Porównaj własności statycznej tablicy z jednokierunkową listą wiązaną.", a: "Tablica: stały rozmiar, szybki dostęp do elementu O(1), ale wolne wstawianie w środku. Lista: rozmiar dynamiczny, wolniejszy dostęp do elementu O(n) (trzeba przejść po kolei), bardzo szybkie wstawianie/usuwanie z przepięciem wskaźników." },
+        { id: 11, isKnown: false, q: "Rodzaje, charakterystyka i przeznaczenie rejestrów procesora.", a: "To najszybsza wewnętrzna pamięć CPU. Dzielą się na ogólnego przeznaczenia (dane bieżące) i specjalne (np. Licznik rozkazów PC - adres kolejnej instrukcji, Akumulator, Wskaźnik stosu)." },
+        { id: 12, isKnown: false, q: "Istota pamięci wirtualnej, mechanizm tłumaczenia adresu.", a: "Rozszerza RAM używając przestrzeni na dysku twardym (plik wymiany). Programy 'widzą' ciągły adres wirtualny. Jednostka MMU tłumaczy ten wirtualny adres na fizyczny adres w RAM (lub na dysku) używając Tablicy Stron." },
+        { id: 13, isKnown: false, q: "Czynniki wpływające na szybkość wykonywania rozkazów przez procesor.", a: "Głównie: Częstotliwość taktowania (GHz), architektura (CISC/RISC), ilość pamięci Cache (L1/L2/L3), liczba rdzeni, zjawisko potokowości (pipelining)." },
+        { id: 14, isKnown: false, q: "Szeregowanie procesów, jakie algorytmy są stosowane.", a: "Decydowanie, któremu procesowi przydzielić CPU. Algorytmy: FCFS (kto pierwszy ten lepszy), SJF (najkrótsze zadanie pierwsze), Round Robin (rotacyjnie z określonym czasem, tzw. kwantem)." },
+        { id: 15, isKnown: false, q: "Synchronizacja procesów - metody.", a: "Zapobiega konfliktom, gdy procesy korzystają z tych samych zasobów. Używa się: Mutexów (wzajemne wykluczanie - klucz do pokoju), Semaforów (licznik wolnych zasobów), Monitorów." },
+        { id: 17, isKnown: false, q: "Strategie przydziału segmentów pamięci.", a: "First-Fit (pierwszy pasujący - szybkie, fragmentuje pamięć), Best-Fit (najlepiej pasujący - oszczędza pamięć, wolniej szuka), Worst-Fit (największy wolny blok - zostawia użyteczne duże 'resztki')." },
+        { id: 18, isKnown: false, q: "System plików i jego realizacja.", a: "Sposób strukturalnej organizacji danych na nośnikach. Zarządza plikami, katalogami i metadanymi (uprawnienia, czas powstania). Przykłady: FAT32, NTFS, ext4." },
+        { id: 19, isKnown: false, q: "Wyznaczanie trasy przez protokoły routingu dynamicznego.", a: "Rutery automatycznie wymieniają się 'tablicami routingu'. Na podstawie metryk (np. koszt łącza, ilość przeskoków) wyznaczają najszybszą ścieżkę dla pakietu." },
+        { id: 20, isKnown: false, q: "Porównanie RIP oraz OSPF.", a: "RIP: stary, metryką jest ilość skoków (max 15), wolno reaguje na awarie. OSPF: nowoczesny, metryką jest stan/przepustowość łącza, ma bardzo szybką zbieżność i tworzy mapę topologii sieci." },
+        { id: 22, isKnown: false, q: "Technologie w sieciach rozległych (WAN).", a: "Łączą sieci na dużych odległościach geograficznych. Technologie to m.in: MPLS (etykietowanie pakietów, szybkie), Frame Relay, VPN, czy współczesne sieci SD-WAN (sterowane programowo)." },
+        { id: 23, isKnown: false, q: "Charakterystyka stosu protokołów TCP/IP.", a: "Baza działania internetu. Ma 4 warstwy (zamiast 7 jak w modelu OSI): 1. Aplikacji (HTTP, FTP), 2. Transportowa (TCP, UDP), 3. Internetowa/Sieciowa (IP, routing), 4. Dostępu do sieci (Ethernet)." },
+        { id: 24, isKnown: false, q: "Działanie zdalnego wywoływania procedur (RPC).", a: "Technika ułatwiająca komunikację sieciową. Program na komputerze A wywołuje funkcję, która fizycznie wykonuje się na serwerze B (np. pobierzDaneKonta()). System ukrywa całą złożoność sieci przed programistą." },
+        { id: 25, isKnown: false, q: "Co to paradygmat? Wymień przykłady.", a: "Paradygmat to ogólny wzorzec, styl tworzenia kodu. Przykłady: Obiektowy (klasy, obiekty), Strukturalny (instrukcje, bloki), Funkcyjny (czyste funkcje bez stanu, np. Haskell), Deklaratywny (piszesz CO ma się stać, np. SQL)." },
+        { id: 26, isKnown: false, q: "Klasa w programowaniu obiektowym i jej składowe.", a: "Klasa to szablon lub 'foremka' z której tworzymy obiekty. Głównymi składowymi są POLA (zmienne, określają stan obiektu) oraz METODY (funkcje, określają zachowanie obiektu)." },
+        { id: 27, isKnown: false, q: "Zjawisko polimorfizmu w programowaniu obiektowym.", a: "Wielopostaciowość. Pozwala wywołać tę samą metodę, ale jej działanie będzie zależało od tego, na jakim typie obiektu zostanie wywołana. Np. metoda .dajGłos() zadziała jako 'miau' dla Kota i 'hau' dla Psa, mimo bycia przypisaną do listy typu 'Zwierzę'." },
+        { id: 28, isKnown: false, q: "Metody anonimowe i wyrażenia strzałkowe (lambda).", a: "To 'krótkie' funkcje bez nazwy, deklarowane w miejscu ich użycia. Świetne do przekazywania logiki jako parametru. W C# (lambda): (x, y) => x + y; (Zwraca sumę bez pisania całego słowa 'return')." },
+        { id: 29, isKnown: false, q: "Scharakteryzuj krótko platformę .NET.", a: "Potężny framework Microsoftu. Cechy: wielojęzyczny (C#, F#), cross-platform, Posiada wirtualną maszynę CLR (Common Language Runtime), która kompiluje kod pośredni IL i posiada Garbage Collector zwalniający pamięć." },
+        { id: 33, isKnown: false, q: "Etapy tworzenia animacji komputerowej.", a: "1. Modelowanie (budowa siatki 3D), 2. Riggowanie (tworzenie szkieletu, żeby model mógł się zginać), 3. Animowanie (ustawianie klatek kluczowych w czasie), 4. Oświetlenie i nakładanie materiałów, 5. Renderowanie (generowanie obrazu/wideo)." },
+        { id: 34, isKnown: false, q: "Technologie prezentacji scen 3D na stronach www.", a: "WebGL: bazowe API graficzne przeglądarek (wykorzystuje kartę graficzną do 3D). WebXR (do AR/VR). Do ułatwienia pisania używa się bibliotek np. Three.js lub Babylon.js." },
+        { id: 37, isKnown: false, q: "Własności i zastosowania sterowania rozmytego.", a: "Fuzzy Logic odchodzi od klasycznego wyjścia 0-1 (Prawda/Fałsz). Używa zbiorów rozmytych (wartości pośrednich, np. 'bardzo zimno', 'ciepło'). Zastosowania: Pralki (czas prania względem wagi i brudu), systemy ABS, klimatyzacja." },
+        { id: 38, isKnown: false, q: "Czy drzewo decyzyjne jest metodą reprezentacji wiedzy?", a: "Tak, to formalna metoda reprezentacji. Składa się z węzłów (testujących jakiś atrybut, np. 'Czy pada deszcz?') oraz liści, które zawierają konkretne rozstrzygnięcia, reguły lub klasyfikacje (np. 'Nie idź na spacer')." },
+        { id: 40, isKnown: false, q: "Model danych rozumiany jako architektura BD.", a: "To zbiór pojęć do opisu danych (struktury, typy), więzów integralności (zasady spójności danych) oraz operacji manipulowania (jak można dane dodawać, zmieniać i usuwać)." },
+        { id: 41, isKnown: false, q: "Typy architektonicznych modeli danych.", a: "Relacyjny (tabele powiązane relacjami), Obiektowy, Hierarchiczny (drzewiasty), Sieciowy, a współcześnie również NoSQL: Dokumentowy (np. MongoDB - format JSON), Grafowy, Klucz-Wartość." },
+        { id: 42, isKnown: false, q: "Trójpoziomowa architektura SBD (ANSI-SPARC).", a: "1. Poziom zewnętrzny: to co widzą poszczególni użytkownicy (Widoki). 2. Poziom pojęciowy (Logiczny): to centralny opis wszystkich danych i ich relacji. 3. Poziom wewnętrzny (Fizyczny): sposób fizycznego zapisu danych na dysku komputera." },
+        { id: 43, isKnown: false, q: "Istota relacyjnego modelu danych.", a: "Podstawą jest matematyczne pojęcie relacji, reprezentowanej jako TABELA. Dane przechowuje się w wierszach. Tabele łączone są ze sobą za pomocą kluczy obcych wskazujących na klucze główne innych tabel (np. Tabela Klient łączy się z Tabelą Zamówienie)." },
+        { id: 44, isKnown: false, q: "Elementy i funkcje jądra systemu zarządzania BD (DBMS).", a: "Jądro zarządza fizycznym dostępem do dysku. Odpowiada za: system transakcji (ACID), autoryzację bezpieczeństwa, buforowanie pamięci, utrzymanie spójności danych (lock manager) i optymalizację zapytań SQL." },
+        { id: 45, isKnown: false, q: "Charakterystyka metody blokowania w BD (Locks).", a: "Mechanizm izolacji transakcji. Gdy transakcja A modyfikuje rekord X, zakłada na nim 'blokadę'. Transakcja B musi poczekać, aż A skończy. Zapobiega to utracie i nadpisywaniu jednoczesnych zmian (race conditions)." },
+        { id: 46, isKnown: false, q: "Diagramy UML opisujące strukturę systemu.", a: "Diagramy strukturalne (statyczne): Diagram Klas (pokazuje klasy systemu i powiązania), Diagram Obiektów, Diagram Komponentów, Diagram Wdrożenia (pokazuje fizyczny sprzęt np. serwery i wgrane oprogramowanie)." },
+        { id: 47, isKnown: false, q: "Diagramy UML opisujące zachowanie systemu.", a: "Diagramy behawioralne (dynamiczne w czasie): Diagram Przypadków Użycia (funkcje z punktu widzenia ludzika/aktora), Diagram Sekwencji (chronologiczna komunikacja), Diagram Aktywności (algorytm/przepływ pracy), Diagram Stanów." },
+        { id: 48, isKnown: false, q: "Omów diagramy przypadków użycia z języka UML.", a: "Pokazują funkcjonalności systemu z punktu widzenia użytkownika. Elementy to Aktor, Przypadek Użycia (owal - akcja), System. Relacje: <<include>> - zawiera (akcja obowiązkowa), <<extend>> - rozszerza (akcja opcjonalna np. w przypadku błędu)." },
+        { id: 49, isKnown: false, q: "Rodzaje testów w procesie wytwórczym.", a: "1. Jednostkowe (Unit Testy - najniższy poziom, testują małe wyizolowane metody). 2. Integracyjne (testują czy moduły ze sobą 'gadają'). 3. Systemowe (testują całą architekturę). 4. Akceptacyjne/UAT (testuje docelowy klient)." },
+        { id: 50, isKnown: false, q: "Trzy modele cyklu życia systemu informatycznego.", a: "Kaskadowy (Waterfall) - fazy liniowe, jedna po drugiej. V-Model - rozszerzenie kaskady, każda faza tworzenia ma przypisaną od razu fazę testów. Zwinny (Agile/Scrum) - iteracyjny cykl, po każdym sprincie (np. 2 tyg.) dostarczamy działający fragment systemu." },
+        { id: 51, isKnown: false, q: "Trzy elementy do budowy systemu wbudowanego (Embedded).", a: "1. Mikroprocesor/Mikrokontroler jako mózg, 2. Pamięć programu (ROM/Flash) oraz danych (RAM), 3. Peryferia wejścia/wyjścia komunikujące się ze światem zewnętrznym (np. czujniki, przyciski, wyświetlacze)." },
+        { id: 52, isKnown: false, q: "Charakterystyka trzech elementów mikrokontrolera.", a: "To system w jednym układzie (SoC). Składa się z: rdzenia CPU (wykonuje program), zintegrowanej Pamięci (Flash na kod, SRAM na zmienne), wbudowanych Peryferiów (np. timery do odliczania czasu, przetworniki ADC czytające sygnał analogowy z czujników)." },
+        { id: 53, isKnown: false, q: "Różnice między mikroprocesorem a mikrokontrolerem.", a: "Mikroprocesor to sam 'mózg' (tylko CPU) - potrzebuje płytki z zewnętrznym RAMem i dyskiem. Mikrokontroler to zintegrowany 'minikomputer w jednym chipie' - zawiera od razu CPU, pamięć, piny I/O (np. Arduino, STM32)." },
+        { id: 54, isKnown: false, q: "Konsekwencje stosowania OS w systemach wbudowanych.", a: "Zwykle stosuje się RTOS (System Operacyjny Czasu Rzeczywistego). Zalety: ułatwia tworzenie zaawansowanego wielowątkowego kodu i jest deterministyczny. Wady: zużywa cenne zasoby (pamięć, taktowanie) co podnosi koszt urządzenia, zwiększa ryzyko błędów/zawieszenia." },
+        { id: 63, isKnown: false, q: "Komputery kwantowe - przyszłość informatyki.", a: "Zamiast klasycznych bitów (0 lub 1) używają kubitów (dzięki superpozycji mogą być oboma stanami jednocześnie). Pozwala to na wykonywanie olbrzymiej liczby obliczeń równolegle (groźne dla dzisiejszej kryptografii RSA, np. szybki algorytm Shora)." },
     ];
 
-        let currentIndex = 0;
-        let isFlipped = false;
+    let filteredDb = [];
+    let currentQuestions = [];
+    let currentIndex = 0;
+    let isTestMode = false;
+    let onlyUnknown = true; // Domyślnie włączony filtr "To czego nie umiesz"
+
+    function init() {
+        applyFilter();
+    }
+
+    function toggleFilter() {
+        onlyUnknown = !onlyUnknown;
+        const btn = document.getElementById('btn-filter');
+        if(onlyUnknown) {
+            btn.classList.add('active');
+            btn.innerText = "Tylko to, czego nie umiem";
+        } else {
+            btn.classList.remove('active');
+            btn.innerText = "Wszystkie pytania (Włączony zbiór pełny)";
+        }
+        applyFilter();
+    }
+
+    function applyFilter() {
+        filteredDb = onlyUnknown ? db.filter(item => !item.isKnown) : [...db];
+        currentQuestions = [...filteredDb];
+        currentIndex = 0;
         
-        // Zmienne dla Testu ABCD
-        let isTestMode = false;
-        let testScore = 0;
-        let currentTestQuestion = 0;
-        let testOrder = [];
-        let currentOptions = [];
-        let answerRevealed = false;
+        if(isTestMode) loadTestQuestion();
+        else loadFlashcard();
+    }
 
-        const questionEl = document.getElementById("question-text");
-        const answerEl = document.getElementById("answer-text");
-        const counterEl = document.getElementById("counter");
-        const cardInner = document.getElementById("flashcard-inner");
+    function switchMode(mode) {
+        isTestMode = mode === 'test';
+        document.getElementById('btn-mode-flashcards').className = !isTestMode ? 'active' : '';
+        document.getElementById('btn-mode-test').className = isTestMode ? 'active' : '';
+        document.getElementById('flashcards-section').className = !isTestMode ? '' : 'hidden';
+        document.getElementById('test-section').className = isTestMode ? 'test-container' : 'test-container hidden';
+        if(isTestMode) loadTestQuestion();
+        else loadFlashcard();
+    }
 
-        // Funkcja tasująca tablicę (Fisher-Yates)
-        function shuffleArray(array) {
-            for (let i = array.length - 1; i > 0; i--) {
-                const j = Math.floor(Math.random() * (i + 1));
-                [array[i], array[j]] = [array[j], array[i]];
-            }
-        }
-
-        function loadCard(index) {
-            if(isFlipped) {
-                // jeśli obrócona, wracamy na przód przed zmianą pytania
-                cardInner.classList.remove("rotate-y-180");
-                isFlipped = false;
-                
-                // czekamy na koniec animacji obrotu
-                setTimeout(() => {
-                    questionEl.innerHTML = allCards[index].q;
-                    answerEl.innerHTML = allCards[index].a;
-                    counterEl.innerText = `Pytanie ${index + 1} / ${allCards.length}`;
-                }, 300);
-            } else {
-                questionEl.innerHTML = allCards[index].q;
-                answerEl.innerHTML = allCards[index].a;
-                counterEl.innerText = `Pytanie ${index + 1} / ${allCards.length}`;
-            }
-        }
-
-        function flipCard() {
-            if (isFlipped) {
-                cardInner.classList.remove("rotate-y-180");
-            } else {
-                cardInner.classList.add("rotate-y-180");
-            }
-            isFlipped = !isFlipped;
-        }
-
-        function nextCard() {
-            if (currentIndex < cardOrder.length - 1) {
-                currentIndex++;
-                loadCard(cardOrder[currentIndex]);
-            } else {
-                // Po przejściu całej talii ponownie losujemy kolejność
-                shuffleCards();
-            }
-        }
-
-        function prevCard() {
-            currentIndex = (currentIndex - 1 + cardOrder.length) % cardOrder.length;
-            loadCard(cardOrder[currentIndex]);
-        }
-
-        // Tworzy nową losową kolejność bez powtarzania,
-        // dopóki nie zostanie przejrzana cała talia.
-        function shuffleCards() {
-            cardOrder = Array.from({length: allCards.length}, (_, i) => i);
-            shuffleArray(cardOrder);
-            currentIndex = 0;
-            loadCard(cardOrder[currentIndex]);
-        }
-
-        // --- LOGIKA TESTU ABCD ---
+    // --- Logika Fiszek ---
+    function loadFlashcard() {
+        if(currentQuestions.length === 0) return;
+        const item = currentQuestions[currentIndex];
+        document.getElementById('flashcard').classList.remove('is-flipped');
         
-        // Przełączanie trybu Fiszki / Test
-        function switchMode(mode) {
-            if (mode === 'test') {
-                document.getElementById('flashcards-section').classList.add('hidden');
-                document.getElementById('test-section').classList.remove('hidden');
-                document.getElementById('btn-mode-test').classList.add('bg-blue-600', 'text-white', 'border-blue-600');
-                document.getElementById('btn-mode-test').classList.remove('bg-white', 'text-slate-700', 'border-slate-200');
-                document.getElementById('btn-mode-fiszki').classList.remove('bg-blue-600', 'text-white');
-                document.getElementById('btn-mode-fiszki').classList.add('bg-white', 'text-slate-700', 'border', 'border-slate-200');
-                isTestMode = true;
-                initTest();
-            } else {
-                document.getElementById('test-section').classList.add('hidden');
-                document.getElementById('flashcards-section').classList.remove('hidden');
-                document.getElementById('btn-mode-fiszki').classList.add('bg-blue-600', 'text-white');
-                document.getElementById('btn-mode-fiszki').classList.remove('bg-white', 'text-slate-700', 'border', 'border-slate-200');
-                document.getElementById('btn-mode-test').classList.remove('bg-blue-600', 'text-white', 'border-blue-600');
-                document.getElementById('btn-mode-test').classList.add('bg-white', 'text-slate-700', 'border-slate-200');
-                isTestMode = false;
-            }
-        }
+        // Timeout pozwala na zresetowanie animacji karty
+        setTimeout(() => {
+            document.getElementById('fc-title').innerText = `Pytanie ${item.id} / 67 (${currentIndex + 1} z widocznych)`;
+            document.getElementById('fc-question').innerText = item.q;
+            document.getElementById('fc-answer').innerText = item.a;
+        }, 150);
+    }
+    
+    function flipCard() { document.getElementById('flashcard').classList.toggle('is-flipped'); }
 
-        // Inicjalizacja testu (reset punktów i tasowanie pytań)
-        function initTest() {
-            testScore = 0;
-            currentTestQuestion = 0;
-            testOrder = Array.from({length: allCards.length}, (_, i) => i);
-            shuffleArray(testOrder); // Losowa kolejność pytań
-            
-            document.getElementById('test-active-view').classList.remove('hidden');
-            document.getElementById('test-result-view').classList.add('hidden');
-            
-            loadTestQuestion();
-        }
+    // --- Logika Testu ---
+    function loadTestQuestion() {
+        if(currentQuestions.length === 0) return;
+        const item = currentQuestions[currentIndex];
+        document.getElementById('test-title').innerText = `Pytanie ${item.id} / 67 (${currentIndex + 1} z widocznych)`;
+        document.getElementById('test-question').innerText = item.q;
+        document.getElementById('test-next-btn').classList.add('hidden');
+        
+        // Generowanie dystraktorów z CAŁEJ bazy (żeby miały sens, nawet z tych co umiemy)
+        let wrongAnswers = db.filter(x => x.id !== item.id).sort(() => 0.5 - Math.random()).slice(0, 3).map(x => x.a);
+        let options = [{text: item.a, correct: true}, ...wrongAnswers.map(a => ({text: a, correct: false}))];
+        options.sort(() => 0.5 - Math.random()); // tasowanie
 
-        // Ładowanie pytania ABCD
-        function loadTestQuestion() {
-            answerRevealed = false;
-            const qIndex = testOrder[currentTestQuestion];
-            const questionData = allCards[qIndex];
-            
-            document.getElementById('test-question-text').innerHTML = questionData.q;
-            document.getElementById('test-counter').innerText = `Pytanie ${currentTestQuestion + 1} / ${allCards.length} | Wynik: ${testScore}`;
-            document.getElementById('test-next-btn').classList.add('hidden');
+        const grid = document.getElementById('test-options');
+        grid.innerHTML = '';
+        options.forEach(opt => {
+            let btn = document.createElement('button');
+            btn.className = 'option-btn';
+            btn.innerText = opt.text.length > 200 ? opt.text.substring(0, 200) + '...' : opt.text;
+            btn.onclick = () => checkAnswer(btn, opt.correct, grid, item.id);
+            grid.appendChild(btn);
+        });
+    }
 
-            // Generowanie błędnych odpowiedzi z innych fiszek
-            let optionsIndices = [qIndex]; // Prawidłowa odpowiedź
-            while(optionsIndices.length < 4) {
-                let rand = Math.floor(Math.random() * allCards.length);
-                if(!optionsIndices.includes(rand)) {
-                    optionsIndices.push(rand);
-                }
-            }
-            shuffleArray(optionsIndices); // Pomieszanie miejsc
-            currentOptions = optionsIndices;
-
-            // Renderowanie opcji A, B, C, D
-            const optionsContainer = document.getElementById('test-options');
-            optionsContainer.innerHTML = '';
-            
-            optionsIndices.forEach((optIndex, i) => {
-                const optDiv = document.createElement('div');
-                optDiv.className = 'test-option p-5 border-2 border-slate-200 rounded-xl cursor-pointer hover:border-blue-400 hover:bg-blue-50 transition bg-white text-sm md:text-base h-40 overflow-y-auto flex items-center justify-center text-center';
-                optDiv.innerHTML = allCards[optIndex].a;
-                optDiv.onclick = () => selectTestAnswer(i, optIndex === qIndex);
-                optionsContainer.appendChild(optDiv);
+    function checkAnswer(btn, isCorrect, grid, currentId) {
+        let buttons = grid.querySelectorAll('button');
+        buttons.forEach(b => b.disabled = true);
+        if(isCorrect) { btn.classList.add('correct'); } 
+        else {
+            btn.classList.add('wrong');
+            let correctOpt = db.find(x => x.id === currentId).a;
+            buttons.forEach(b => { 
+                if(b.innerText.includes(correctOpt.substring(0, 30))) b.classList.add('correct'); 
             });
         }
+        document.getElementById('test-next-btn').classList.remove('hidden');
+    }
 
-        // Obsługa wyboru odpowiedzi
-        function selectTestAnswer(selectedIndex, isCorrect) {
-            if(answerRevealed) return; // Zapobiega wielokrotnemu klikaniu
-            answerRevealed = true;
-            
-            const options = document.getElementById('test-options').children;
-            
-            if(isCorrect) {
-                testScore++;
-                options[selectedIndex].classList.add('border-green-500', 'bg-green-100', 'shadow-md');
-                options[selectedIndex].classList.remove('border-slate-200', 'hover:border-blue-400', 'hover:bg-blue-50');
-            } else {
-                // Zaznacz błędną
-                options[selectedIndex].classList.add('border-red-500', 'bg-red-100', 'shadow-md');
-                options[selectedIndex].classList.remove('border-slate-200', 'hover:border-blue-400', 'hover:bg-blue-50');
-                
-                // Pokaż, która była poprawna
-                const correctPos = currentOptions.indexOf(testOrder[currentTestQuestion]);
-                options[correctPos].classList.add('border-green-500', 'bg-green-100', 'shadow-md');
-                options[correctPos].classList.remove('border-slate-200', 'hover:border-blue-400', 'hover:bg-blue-50');
-            }
-            
-            document.getElementById('test-counter').innerText = `Pytanie ${currentTestQuestion + 1} / ${allCards.length} | Wynik: ${testScore}`;
-            document.getElementById('test-next-btn').classList.remove('hidden');
+    function nextTestQuestion() { nextQuestion(); }
+
+    // --- Nawigacja ---
+    function nextQuestion() {
+        if(currentQuestions.length === 0) return;
+        currentIndex = (currentIndex + 1) % currentQuestions.length;
+        isTestMode ? loadTestQuestion() : loadFlashcard();
+    }
+    function prevQuestion() {
+        if(currentQuestions.length === 0) return;
+        currentIndex = (currentIndex - 1 + currentQuestions.length) % currentQuestions.length;
+        isTestMode ? loadTestQuestion() : loadFlashcard();
+    }
+    function shuffleQuestions() {
+        if(currentQuestions.length === 0) return;
+        currentQuestions.sort(() => Math.random() - 0.5);
+        currentIndex = 0;
+        isTestMode ? loadTestQuestion() : loadFlashcard();
+    }
+
+    // Obsługa klawiatury
+    document.addEventListener('keydown', (e) => {
+        if(!isTestMode) {
+            if(e.key === 'ArrowRight') nextQuestion();
+            if(e.key === 'ArrowLeft') prevQuestion();
+            if(e.key === ' ' || e.key === 'Enter') { e.preventDefault(); flipCard(); }
         }
+    });
 
-        // Przejście do następnego pytania
-        function nextTestQuestion() {
-            if(currentTestQuestion < allCards.length - 1) {
-                currentTestQuestion++;
-                loadTestQuestion();
-            } else {
-                // Zakończenie testu i pokazanie dedykowanego okienka (zamiast powiadomienia alert)
-                document.getElementById('test-active-view').classList.add('hidden');
-                document.getElementById('test-result-view').classList.remove('hidden');
-                document.getElementById('test-final-score').innerText = `${testScore} / ${allCards.length}`;
-            }
-        }
-
-        // Inicjalizacja przy załadowaniu strony
-        window.onload = () => {
-            shuffleCards();
-            
-            // Obsługa strzałek na klawiaturze
-            document.addEventListener('keydown', function(event) {
-                if(!isTestMode) {
-                    // Klawisze w trybie Fiszek
-                    if(event.key === "ArrowRight") nextCard();
-                    if(event.key === "ArrowLeft") prevCard();
-                    if(event.key === " " || event.key === "Enter" || event.key === "ArrowUp" || event.key === "ArrowDown") {
-                        event.preventDefault(); // Zablokuj przewijanie strony spacją/strzałkami
-                        flipCard();
-                    }
-                } else {
-                    // Klawisze w trybie Testu
-                    if (event.key === "Enter" || event.key === "ArrowRight") {
-                        if (answerRevealed) nextTestQuestion();
-                    }
-                }
-            });
-        };
-    </script>
+    init();
+</script>
 </body>
 </html>
